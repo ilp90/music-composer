@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm test *)",
+      "Bash(grep -vE '^\\\\s*$')",
+      "Bash(pnpm format *)",
+      "Bash(pnpm --filter @mc/web remove jsdom)",
+      "Bash(pnpm --filter @mc/web add -D happy-dom@^21.0.3)",
+      "Bash(sed -i '' \"s/environment: 'jsdom'/environment: 'happy-dom'/\" apps/web/vite.config.ts)",
+      "Bash(pnpm --filter @mc/web test)",
+      "Bash(pnpm exec *)",
+      "Bash(pnpm e2e *)",
+      "Bash(pnpm dev *)",
+      "Bash(ps -o pid,etime,command -p 55946)",
+      "Bash(curl -s localhost:3000/healthz)",
+      "Bash(lsof -nP -iTCP:3000 -iTCP:5173 -sTCP:LISTEN)",
+      "Bash(pnpm format:check)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm --filter @mc/api add bcrypt@^6.0.0 jose@^6.2.13 @fastify/cookie@^11.1.3 @aws-sdk/lib-dynamodb@^3.1156.0 @aws-sdk/client-dynamodb@^3.1156.0 ulid@^3.0.2)",
+      "Bash(pnpm --filter @mc/api add -D @types/bcrypt@^6.0.0)",
+      "Bash(pnpm --filter @mc/web add jose@^6.2.13)",
+      "Bash(node -e \"const b=require\\('./apps/api/node_modules/bcrypt'\\); b.hash\\('x',4\\).then\\(h=>console.log\\('bcrypt ok', h.slice\\(0,7\\)\\)\\)\")",
+      "Bash(pnpm --filter @mc/web remove jose)",
+      "Bash(python3 -)",
+      "Bash(pnpm --filter @mc/api typecheck)",
+      "Bash(pnpm --filter @mc/shared typecheck)",
+      "Bash(sed -i '' 's/MinIO uses these as its root user/RustFS uses these as its root user/' apps/api/.env)",
+      "Bash(pnpm -s --filter @mc/api keys:generate)",
+      "Bash(node --env-file=.env -e \"const j=JSON.parse\\(process.env.JWT_PRIVATE_JWK\\); console.log\\('env parses ok, kid', j.kid.slice\\(0,8\\), 'has d:', !!j.d\\)\")",
+      "Bash(pnpm --filter @mc/web exec tsc -p tsconfig.json)",
+      "Bash(sed -i '' \"s/\\\\['error', { argsIgnorePattern: '\\\\^_' }\\\\]/['error', { argsIgnorePattern: '^_', ignoreRestSiblings: true }]/\" eslint.config.js)",
+      "Bash(sed -i '' 's/const { d: _d, ...publicJwk } = jwk;/const { d: _private, ...publicJwk } = jwk;/' apps/api/src/services/tokens.ts)"
+    ]
+  }
+}

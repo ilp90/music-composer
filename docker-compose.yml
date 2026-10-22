@@ -1,0 +1,41 @@
+# Local stand-ins for AWS services. Not used in production.
+name: music-composer
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:3.3.2
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data
+    # The image's default user cannot write to a fresh named volume.
+    user: root
+    ports:
+      - '8000:8000'
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -s -o /dev/null http://localhost:8000 || exit 1']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  # S3-compatible object store (MinIO no longer publishes community images).
+  s3:
+    image: rustfs/rustfs:1.0.3
+    environment:
+      # Must match AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY in apps/api/.env
+      RUSTFS_ACCESS_KEY: localdev
+      RUSTFS_SECRET_KEY: localdev-secret
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    ports:
+      - '9000:9000' # S3 API
+      - '9001:9001' # web console
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -sf http://localhost:9000/health || exit 1']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+volumes:
+  dynamodb-data:
+  s3-data:

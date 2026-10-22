@@ -1,0 +1,35 @@
+{
+  "name": "@mc/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "build": "node scripts/build.mjs",
+    "start": "node dist/server.js",
+    "local:init": "tsx --env-file-if-exists=.env scripts/local-init.ts",
+    "keys:generate": "tsx scripts/generate-keys.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1156.0",
+    "@aws-sdk/client-s3": "^3.1153.0",
+    "@aws-sdk/lib-dynamodb": "^3.1156.0",
+    "@fastify/cookie": "^11.1.3",
+    "@fastify/cors": "^11.3.1",
+    "@mc/shared": "workspace:*",
+    "bcrypt": "^6.0.0",
+    "fastify": "^5.12.7",
+    "jose": "^6.2.13",
+    "ulid": "^3.0.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
+}
