@@ -5,6 +5,7 @@ import { TextField } from '../../components/TextField';
 import { AuthCard, FormError, SubmitButton } from './AuthCard';
 import { useAuth } from './authContext';
 import { apiFormErrors, zodFieldErrors, type FieldErrors } from './formErrors';
+import { GoogleSignIn } from './GoogleSignIn';
 import { redirectTarget } from './redirect';
 
 export function RegisterPage() {
@@ -57,6 +58,7 @@ export function RegisterPage() {
     >
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
         <FormError message={formError} />
+        <GoogleSignIn returnTo={redirectTarget(location.state)} />
         <TextField
           label="Display name"
           name="displayName"

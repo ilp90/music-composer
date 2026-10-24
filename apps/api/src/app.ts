@@ -8,15 +8,20 @@ import { createLoginAttemptsRepository } from './repositories/loginAttempts';
 import { createRefreshTokensRepository } from './repositories/refreshTokens';
 import { createUsersRepository } from './repositories/users';
 import { authRoutes } from './routes/auth';
+import { googleRoutes } from './routes/google';
 import { healthRoutes } from './routes/health';
 import { meRoutes } from './routes/me';
+import { createGoogleClient, type GoogleClient } from './services/google';
 import { createPasswordService } from './services/passwords';
+import { createSessionService } from './services/sessions';
 import { createTokenService, loadSigningKey } from './services/tokens';
 
 export interface AppOverrides {
   /** Injectable clock for tests (token expiry, grace windows, lockout windows). */
   now?: () => Date;
   db?: DocClient;
+  /** Fake Google OAuth client for tests; `null` forces Google sign-in off. */
+  google?: GoogleClient | null;
 }
 
 export async function buildApp(config: Config, overrides: AppOverrides = {}) {
@@ -53,15 +58,31 @@ export async function buildApp(config: Config, overrides: AppOverrides = {}) {
   await app.register(cors, { origin: config.CORS_ORIGIN, credentials: true });
   await app.register(cookie);
   await app.register(healthRoutes);
+  const sessions = createSessionService({ config, refreshTokens, tokens, now });
+  const google =
+    overrides.google !== undefined
+      ? (overrides.google ?? undefined)
+      : config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_SECRET
+        ? createGoogleClient(
+            config.GOOGLE_CLIENT_ID,
+            config.GOOGLE_CLIENT_SECRET,
+            config.GOOGLE_REDIRECT_URI,
+            now,
+          )
+        : undefined;
+  if (!google)
+    app.log.info('Google sign-in disabled (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set)');
+
   await app.register(authRoutes, {
     config,
     users,
     refreshTokens,
     loginAttempts,
     passwords,
-    tokens,
+    sessions,
     now,
   });
+  await app.register(googleRoutes, { config, google, users, sessions, now });
   await app.register(meRoutes, { users, tokens });
 
   return app;

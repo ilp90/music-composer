@@ -31,6 +31,7 @@ pnpm monorepo, TypeScript (strict) everywhere.
 - API errors: throw `AppError(status, code, message)` (`apps/api/src/errors.ts`); codes live in `ErrorCode` in `@mc/shared`. ZodErrors become 400 `VALIDATION_ERROR` with `fieldErrors`; DynamoDB outages become 503 + `Retry-After`.
 - API: `buildApp(config, { now, db })` in `apps/api/src/app.ts` wires repositories/services and routes. Protected routes use `preHandler: requireAuth(tokens)` and read `request.userId`. Route tests use `app.inject` via `createTestApp()` in `apps/api/test/testApp.ts` (injectable clock).
 - DynamoDB access only through `apps/api/src/repositories/*`; match AWS errors by name with `db/errors.ts`, not `instanceof`.
+- Google sign-in (`apps/api/src/routes/google.ts`) is a full-page redirect flow: `/api/auth/google/start` → Google → `GOOGLE_REDIRECT_URI` (dev: the API directly at `:3000/auth/google/callback`) → session cookie → redirect to the app. Failures land on `/login?error=<reason>`. Tests inject a fake `GoogleClient` via `buildApp(config, { google })`; never call real Google in tests.
 - Web auth: `useAuth()` for session state; wrap signed-in routes in `ProtectedRoute`. The access token is memory-only; never put tokens in localStorage.
 - Keep TypeScript at 6.0.x until typescript-eslint supports 7.
 

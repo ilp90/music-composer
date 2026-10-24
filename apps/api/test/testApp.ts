@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { inject } from 'vitest';
-import { buildApp, type App } from '../src/app';
+import { buildApp, type App, type AppOverrides } from '../src/app';
 import { loadConfig } from '../src/config';
-import { REFRESH_COOKIE } from '../src/routes/auth';
+import { REFRESH_COOKIE } from '../src/services/sessions';
 
 export const WEB_ORIGIN = 'http://localhost:5173';
 
@@ -13,7 +13,10 @@ export interface TestApp {
 }
 
 /** App wired to the per-run DynamoDB Local table, with a fast bcrypt cost and a controllable clock. */
-export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
+export async function createTestApp(
+  env: Record<string, string> = {},
+  overrides: Omit<AppOverrides, 'now'> = {},
+): Promise<TestApp> {
   let current = Date.now();
   const config = loadConfig({
     NODE_ENV: 'test',
@@ -23,7 +26,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
     BCRYPT_COST: '4',
     ...env,
   });
-  const app = await buildApp(config, { now: () => new Date(current) });
+  const app = await buildApp(config, { ...overrides, now: () => new Date(current) });
   return {
     app,
     advance(seconds) {

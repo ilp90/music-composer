@@ -1,4 +1,4 @@
-import { LoginBody, RegisterBody, type AuthResponse, type User } from '@mc/shared';
+import { LoginBody, RegisterBody } from '@mc/shared';
 import type { FastifyBaseLogger, FastifyPluginAsync, FastifyReply } from 'fastify';
 import { ulid } from 'ulid';
 import type { Config } from '../config';
@@ -8,9 +8,8 @@ import type { LoginAttemptsRepository } from '../repositories/loginAttempts';
 import type { RefreshTokensRepository } from '../repositories/refreshTokens';
 import { EmailTakenError, type UserRecord, type UsersRepository } from '../repositories/users';
 import { isCommonPassword, type PasswordService } from '../services/passwords';
-import { generateRefreshToken, parseRefreshToken, type TokenService } from '../services/tokens';
-
-export const REFRESH_COOKIE = 'mc_rt';
+import { REFRESH_COOKIE, type SessionService } from '../services/sessions';
+import { generateRefreshToken, parseRefreshToken } from '../services/tokens';
 
 export interface AuthRoutesOptions {
   config: Config;
@@ -18,16 +17,12 @@ export interface AuthRoutesOptions {
   refreshTokens: RefreshTokensRepository;
   loginAttempts: LoginAttemptsRepository;
   passwords: PasswordService;
-  tokens: TokenService;
+  sessions: SessionService;
   now: () => Date;
 }
 
-export function toPublicUser({ id, email, displayName, createdAt }: UserRecord): User {
-  return { id, email, displayName, createdAt };
-}
-
 /** Runs a non-critical write/read; on failure logs and returns the fallback so the request still succeeds (SPEC §5). */
-async function bestEffort<T>(
+export async function bestEffort<T>(
   log: FastifyBaseLogger,
   what: string,
   fn: () => Promise<T>,
@@ -42,40 +37,11 @@ async function bestEffort<T>(
 }
 
 export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opts) => {
-  const { config, users, refreshTokens, loginAttempts, passwords, tokens, now } = opts;
-  const refreshTtlMs = config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
+  const { config, users, refreshTokens, loginAttempts, passwords, sessions, now } = opts;
 
-  const cookieOptions = {
-    httpOnly: true,
-    secure: config.COOKIE_SECURE,
-    sameSite: 'strict',
-    path: config.COOKIE_PATH,
-  } as const;
-
-  const setRefreshCookie = (reply: FastifyReply, token: string) =>
-    reply.setCookie(REFRESH_COOKIE, token, { ...cookieOptions, maxAge: refreshTtlMs / 1000 });
-  const clearRefreshCookie = (reply: FastifyReply) =>
-    reply.clearCookie(REFRESH_COOKIE, cookieOptions);
-
-  const authResponse = async (user: UserRecord): Promise<AuthResponse> => ({
-    accessToken: await tokens.signAccessToken(user.id),
-    expiresIn: tokens.accessTtlSeconds,
-    user: toPublicUser(user),
-  });
-
-  /** Starts a new refresh-token family (one per login/device) and returns the access token. */
-  const startSession = async (reply: FastifyReply, user: UserRecord): Promise<AuthResponse> => {
-    const at = now();
-    const { token, hash } = generateRefreshToken(user.id);
-    await refreshTokens.createFamily(
-      user.id,
-      ulid(),
-      hash,
-      at,
-      new Date(at.getTime() + refreshTtlMs),
-    );
-    setRefreshCookie(reply, token);
-    return authResponse(user);
+  const startSession = async (reply: FastifyReply, user: UserRecord) => {
+    await sessions.start(reply, user);
+    return sessions.authResponse(user);
   };
 
   app.post('/auth/register', async (request, reply) => {
@@ -156,7 +122,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opt
 
     const presented = parseRefreshToken(request.cookies[REFRESH_COOKIE]);
     if (!presented) {
-      clearRefreshCookie(reply);
+      sessions.clearRefreshCookie(reply);
       throw new AppError(401, 'INVALID_REFRESH_TOKEN', 'Session expired, please sign in again');
     }
 
@@ -167,7 +133,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opt
       oldHash: presented.hash,
       newHash: next.hash,
       now: at,
-      expiresAt: new Date(at.getTime() + refreshTtlMs),
+      expiresAt: new Date(at.getTime() + sessions.refreshTtlMs),
       graceSeconds: config.REFRESH_REUSE_GRACE_SECONDS,
     });
 
@@ -179,18 +145,18 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opt
         );
       }
       // On a race the browser may already hold the winner's new cookie: don't clear it.
-      if (result.reason !== 'race') clearRefreshCookie(reply);
+      if (result.reason !== 'race') sessions.clearRefreshCookie(reply);
       throw new AppError(401, 'INVALID_REFRESH_TOKEN', 'Session expired, please sign in again');
     }
 
     const user = await users.findById(presented.userId);
     if (!user) {
-      clearRefreshCookie(reply);
+      sessions.clearRefreshCookie(reply);
       throw new AppError(401, 'INVALID_REFRESH_TOKEN', 'Session expired, please sign in again');
     }
 
-    setRefreshCookie(reply, next.token);
-    return reply.send(await authResponse(user));
+    sessions.setRefreshCookie(reply, next.token);
+    return reply.send(await sessions.authResponse(user));
   });
 
   app.post('/auth/logout', async (request, reply) => {
@@ -210,7 +176,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (app, opt
       );
     }
 
-    clearRefreshCookie(reply);
+    sessions.clearRefreshCookie(reply);
     return reply.status(204).send();
   });
 };

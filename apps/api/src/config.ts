@@ -36,6 +36,13 @@ const EnvSchema = z
       .int()
       .positive()
       .default(15 * 60),
+
+    // Google sign-in is enabled only when both are set; email/password works regardless.
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    // Must exactly match an "Authorized redirect URI" of the OAuth client. In production:
+    // https://<app domain>/api/auth/google/callback (CloudFront strips /api).
+    GOOGLE_REDIRECT_URI: z.url().default('http://localhost:3000/auth/google/callback'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

@@ -9,7 +9,7 @@ import {
   WEB_ORIGIN,
   type TestApp,
 } from '../../test/testApp';
-import { REFRESH_COOKIE } from './auth';
+import { REFRESH_COOKIE } from '../services/sessions';
 
 let t: TestApp;
 

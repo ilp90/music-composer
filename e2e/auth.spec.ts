@@ -82,3 +82,20 @@ test('registration shows field errors from the client and the server', async ({
   await expect(page.getByText('An account with this email already exists')).toBeVisible();
   await expect(page).toHaveURL('/register');
 });
+
+test('"Continue with Google" starts the OAuth flow at the API, keeping the destination', async ({
+  page,
+}) => {
+  await page.goto('/compose'); // redirected to /login, remembering /compose
+
+  await expect(page.getByRole('link', { name: 'Continue with Google' })).toHaveAttribute(
+    'href',
+    '/api/auth/google/start?returnTo=%2Fcompose',
+  );
+});
+
+test('a failed Google sign-in explains what happened', async ({ page }) => {
+  await page.goto('/login?error=google_cancelled');
+
+  await expect(page.getByRole('alert')).toHaveText('Google sign-in was cancelled.');
+});

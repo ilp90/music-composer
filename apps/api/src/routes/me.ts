@@ -4,7 +4,7 @@ import { AppError } from '../errors';
 import { requireAuth } from '../plugins/authGuard';
 import type { UsersRepository } from '../repositories/users';
 import type { TokenService } from '../services/tokens';
-import { toPublicUser } from './auth';
+import { toPublicUser } from '../services/sessions';
 
 export interface MeRoutesOptions {
   users: UsersRepository;
