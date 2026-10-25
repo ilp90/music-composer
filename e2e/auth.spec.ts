@@ -1,25 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import { expect, test, type Browser, type Page } from '@playwright/test';
-
-const PASSWORD = 'violet-fifths-lantern';
-const uniqueEmail = () => `e2e-${randomUUID()}@example.com`;
-
-async function signUp(page: Page, email: string, displayName = 'Ada Lovelace') {
-  await page.goto('/register');
-  await page.getByLabel('Display name').fill(displayName);
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Create account' }).click();
-}
-
-/** Registers in a separate browser context, so the test's own page starts signed out. */
-async function createAccount(browser: Browser, email: string) {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await signUp(page, email);
-  await expect(page).toHaveURL('/compose');
-  await context.close();
-}
+import { expect, test } from '@playwright/test';
+import { createAccount, PASSWORD, signUp, uniqueEmail } from './helpers';
 
 test('sign up lands on Compose, survives a reload, and signs out', async ({ page }) => {
   await signUp(page, uniqueEmail());

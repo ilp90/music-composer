@@ -5,15 +5,18 @@ import type { Config } from './config';
 import { createDocClient, createDynamoClient, type DocClient } from './db/client';
 import { registerErrorHandler } from './plugins/errorHandler';
 import { createLoginAttemptsRepository } from './repositories/loginAttempts';
+import { createRecordingsRepository } from './repositories/recordings';
 import { createRefreshTokensRepository } from './repositories/refreshTokens';
 import { createUsersRepository } from './repositories/users';
 import { authRoutes } from './routes/auth';
 import { googleRoutes } from './routes/google';
 import { healthRoutes } from './routes/health';
 import { meRoutes } from './routes/me';
+import { recordingRoutes } from './routes/recordings';
 import { createGoogleClient, type GoogleClient } from './services/google';
 import { createPasswordService } from './services/passwords';
 import { createSessionService } from './services/sessions';
+import { createS3Client, createStorage } from './services/storage';
 import { createTokenService, loadSigningKey } from './services/tokens';
 
 export interface AppOverrides {
@@ -84,6 +87,13 @@ export async function buildApp(config: Config, overrides: AppOverrides = {}) {
   });
   await app.register(googleRoutes, { config, google, users, sessions, now });
   await app.register(meRoutes, { users, tokens });
+  await app.register(recordingRoutes, {
+    config,
+    recordings: createRecordingsRepository(db, config.DYNAMODB_TABLE),
+    storage: createStorage(createS3Client(config), config.S3_BUCKET),
+    tokens,
+    now,
+  });
 
   return app;
 }

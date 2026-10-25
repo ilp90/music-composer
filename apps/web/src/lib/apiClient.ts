@@ -131,4 +131,7 @@ export const api = {
   post<T extends z.ZodType>(path: string, body: unknown, schema?: T, options: RequestOptions = {}) {
     return request('POST', path, body, schema, options);
   },
+  delete(path: string, options: RequestOptions = {}) {
+    return request('DELETE', path, undefined, undefined, options);
+  },
 };

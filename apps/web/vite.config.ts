@@ -6,6 +6,9 @@ const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Pre-bundle the compose view's heavy deps at server start, so Vite never has to discover them
+  // on first visit and re-optimize/reload mid-session.
+  optimizeDeps: { include: ['tone', '@mediapipe/tasks-vision'] },
   server: {
     port: 5173,
     strictPort: true,

@@ -1,3 +1,4 @@
+import { RECORDING_QUOTA_BYTES } from '@mc/shared';
 import { z } from 'zod';
 
 const EnvSchema = z
@@ -43,6 +44,24 @@ const EnvSchema = z
     // Must exactly match an "Authorized redirect URI" of the OAuth client. In production:
     // https://<app domain>/api/auth/google/callback (CloudFront strips /api).
     GOOGLE_REDIRECT_URI: z.url().default('http://localhost:3000/auth/google/callback'),
+
+    // Recordings: uploaded by the browser straight to S3 in parts (S3 minimum part size is 5 MiB).
+    RECORDING_PART_BYTES: z.coerce
+      .number()
+      .int()
+      .min(5 * 1024 * 1024)
+      .default(8 * 1024 * 1024),
+    RECORDING_QUOTA_BYTES: z.coerce.number().int().positive().default(RECORDING_QUOTA_BYTES),
+    UPLOAD_URL_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(15 * 60),
+    PLAYBACK_URL_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60 * 60),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;

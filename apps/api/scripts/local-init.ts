@@ -8,6 +8,7 @@ import {
 import { loadConfig } from '../src/config';
 import { createDynamoClient } from '../src/db/client';
 import { ensureTable } from '../src/db/schema';
+import { createStorage } from '../src/services/storage';
 
 const config = loadConfig();
 
@@ -39,3 +40,7 @@ try {
     if (!(err instanceof BucketAlreadyOwnedByYou)) throw err;
   }
 }
+
+// The browser uploads recording parts straight to S3 and must read each part's ETag.
+await createStorage(s3, config.S3_BUCKET).allowBrowserUploads(config.CORS_ORIGIN);
+console.log(`S3: CORS allows browser uploads from ${config.CORS_ORIGIN}`);

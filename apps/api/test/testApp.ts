@@ -23,6 +23,8 @@ export async function createTestApp(
     CORS_ORIGIN: WEB_ORIGIN,
     DYNAMODB_ENDPOINT: inject('dynamoEndpoint'),
     DYNAMODB_TABLE: inject('dynamoTable'),
+    S3_ENDPOINT: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+    S3_BUCKET: 'recordings',
     BCRYPT_COST: '4',
     ...env,
   });

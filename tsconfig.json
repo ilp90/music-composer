@@ -1,7 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // e2e tests run callbacks in the browser (page.evaluate)
+    "lib": ["ES2023", "DOM"]
   },
   "include": ["e2e", "playwright.config.ts"]
 }
