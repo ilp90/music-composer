@@ -27,6 +27,7 @@ jobs:
       # API integration + e2e tests use DynamoDB Local / RustFS; the example env points at them.
       - run: cp apps/api/.env.example apps/api/.env
       - run: docker compose up -d --wait
+      - run: pnpm --filter @mc/api local:init
       - run: pnpm test
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
